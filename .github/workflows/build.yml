@@ -18,30 +18,41 @@ jobs:
       with:
         python-version: '3.10'
         
-    - name: Install dependencies
+    - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
             python3-pip \
+            build-essential \
             git \
             zip \
             unzip \
-            openjdk-11-jdk
+            openjdk-17-jdk \
+            wget
             
-    - name: Install Buildozer
+    - name: Install Buildozer and Cython
       run: |
         pip3 install --upgrade pip
         pip3 install buildozer
         pip3 install cython==0.29.33
         
-    - name: Build APK (автоматически примет лицензии)
+    - name: Initialize Buildozer and accept licenses
       run: |
-        # Устанавливаем переменные окружения для автоматического принятия лицензий
-        export ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
-        mkdir -p $HOME/.android
-        echo "### User Sources for Android SDK Manager" > $HOME/.android/repositories.cfg
+        # Инициализируем Buildozer (создаст конфиг если нет)
+        buildozer init || true
         
-        # Запускаем сборку
+        # Ждем пока Buildozer скачает SDK (первые 5 минут)
+        timeout 300 bash -c 'while [ ! -d ~/.buildozer/android/platform/android-sdk ]; do sleep 10; echo "Waiting for SDK download..."; done'
+        
+        # Принимаем лицензии
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
+        echo "y" | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+        echo "y" | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0" || true
+        
+    - name: Build APK with Buildozer
+      timeout-minutes: 60
+      run: |
         buildozer -v android debug
         
     - name: Upload APK
@@ -50,4 +61,3 @@ jobs:
       with:
         name: calculator-apk
         path: bin/*.apk
-        retention-days: 1
