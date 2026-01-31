@@ -9,7 +9,6 @@ requirements = python3,kivy==2.1.0
 orientation = portrait
 
 [android]
-# Версия SDK (ИЗМЕНИТЕ НА 33!)
 android.sdk = 33
 android.minapi = 21
 android.target_api = 33
