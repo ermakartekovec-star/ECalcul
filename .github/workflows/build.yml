@@ -18,36 +18,36 @@ jobs:
       with:
         python-version: '3.10'
         
-    - name: Install system dependencies
+    - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
             python3-pip \
-            build-essential \
             git \
             zip \
             unzip \
             openjdk-11-jdk
             
-    - name: Install Buildozer and Cython
+    - name: Install Buildozer
       run: |
         pip3 install --upgrade pip
         pip3 install buildozer
         pip3 install cython==0.29.33
         
-    - name: Accept Android SDK licenses
+    - name: Build APK (автоматически примет лицензии)
       run: |
-        mkdir -p ~/.android
-        touch ~/.android/repositories.cfg
-        echo "yes" | $ANDROID_SDK_ROOT/tools/bin/sdkmanager --licenses
-        $ANDROID_SDK_ROOT/tools/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
+        # Устанавливаем переменные окружения для автоматического принятия лицензий
+        export ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
+        mkdir -p $HOME/.android
+        echo "### User Sources for Android SDK Manager" > $HOME/.android/repositories.cfg
         
-    - name: Build APK with Buildozer
-      run: |
+        # Запускаем сборку
         buildozer -v android debug
         
     - name: Upload APK
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: calculator-apk
         path: bin/*.apk
+        retention-days: 1
