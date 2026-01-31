@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 120  # Увеличиваем общее время до 2 часов
     
     steps:
     - name: Checkout code
@@ -18,42 +19,50 @@ jobs:
       with:
         python-version: '3.10'
         
-    - name: Install system dependencies
+    - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
             python3-pip \
-            build-essential \
             git \
             zip \
             unzip \
-            openjdk-17-jdk \
-            wget
+            openjdk-17-jdk
             
-    - name: Install Buildozer and Cython
+    - name: Install Buildozer
       run: |
         pip3 install --upgrade pip
         pip3 install buildozer
         pip3 install cython==0.29.33
         
-    - name: Initialize Buildozer and accept licenses
+    - name: Prepare Android SDK licenses
       run: |
-        # Инициализируем Buildozer (создаст конфиг если нет)
-        buildozer init || true
-        
-        # Ждем пока Buildozer скачает SDK (первые 5 минут)
-        timeout 300 bash -c 'while [ ! -d ~/.buildozer/android/platform/android-sdk ]; do sleep 10; echo "Waiting for SDK download..."; done'
-        
-        # Принимаем лицензии
         mkdir -p ~/.android
         touch ~/.android/repositories.cfg
-        echo "y" | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
-        echo "y" | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0" || true
+        # Эта команда подготовит файл для автоматического принятия лицензий
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > ~/.android/licenses/android-sdk-license
+        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.android/licenses/android-sdk-license
+        echo "84831b9409646a918e30573b4d6d4c7231fde7e5" > ~/.android/licenses/android-sdk-preview-license
         
-    - name: Build APK with Buildozer
-      timeout-minutes: 60
+    - name: Build APK (полная автоматизация)
       run: |
-        buildozer -v android debug
+        # Удаляем старые кэши если есть
+        rm -rf ~/.buildozer 2>/dev/null || true
+        
+        # Запускаем сборку с увеличенным временем
+        buildozer -v android debug 2>&1 | tail -100
+        
+    - name: Check if APK exists
+      run: |
+        if [ -f bin/*.apk ]; then
+          echo "✅ APK успешно создан!"
+          ls -la bin/
+        else
+          echo "❌ APK не найден"
+          # Показываем логи ошибок
+          find . -name "*.log" -exec tail -50 {} \;
+          exit 1
+        fi
         
     - name: Upload APK
       if: success()
@@ -61,3 +70,4 @@ jobs:
       with:
         name: calculator-apk
         path: bin/*.apk
+        retention-days: 7
