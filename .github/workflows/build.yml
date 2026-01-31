@@ -3,7 +3,7 @@ name: Build Android APK
 on:
   push:
     tags:
-      - 'v*'  # Запускать сборку только при создании тега (например, v1.0)
+      - 'v*'
 
 jobs:
   build:
@@ -25,45 +25,29 @@ jobs:
             python3-pip \
             build-essential \
             git \
-            python3-dev \
-            ffmpeg \
-            libsdl2-dev \
-            libsdl2-image-dev \
-            libsdl2-mixer-dev \
-            libsdl2-ttf-dev \
-            libportmidi-dev \
-            libswscale-dev \
-            libavformat-dev \
-            libavcodec-dev \
-            zlib1g-dev \
-            libgstreamer1.0-0 \
-            gstreamer1.0-plugins-base \
-            gstreamer1.0-plugins-good \
-            libjpeg-dev \
-            libtiff5-dev \
-            libx11-dev \
-            libmtdev-dev \
-            libgl1-mesa-dev \
-            libgles2-mesa-dev \
-            libgudev-1.0-0 \
-            libboost-all-dev \
-            libssl-dev \
-            libsqlite3-dev
-              
-    - name: Install Buildozer
+            zip \
+            unzip \
+            openjdk-11-jdk
+            
+    - name: Install Buildozer and Cython
       run: |
         pip3 install --upgrade pip
         pip3 install buildozer
-        pip3 install cython==0.29.33  # Важная версия для совместимости
+        pip3 install cython==0.29.33
+        
+    - name: Accept Android SDK licenses
+      run: |
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
+        echo "yes" | $ANDROID_SDK_ROOT/tools/bin/sdkmanager --licenses
+        $ANDROID_SDK_ROOT/tools/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
         
     - name: Build APK with Buildozer
       run: |
         buildozer -v android debug
-        # Переименовываем выходной файл
-        cp bin/*.apk bin/mycalculator-unsigned.apk
         
-    - name: Upload APK artifact
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: mycalculator-apk
+        name: calculator-apk
         path: bin/*.apk
