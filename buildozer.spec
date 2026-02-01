@@ -1,23 +1,18 @@
 [app]
 title = E-Calcul
 package.name = ecalcul
-package.domain = org.test
+package.domain = com.ecalcul
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas
-version = 4.0
-requirements = python3,kivy==2.1.0
+version = 1.0
+requirements = python3,kivy==2.0.0  # Более стабильная версия!
 orientation = portrait
 
 [android]
-# ВАЖНО: должно совпадать с workflow!
-android.sdk = 33
+# ТОЛЬКО ОСНОВНЫЕ НАСТРОЙКИ
 android.minapi = 21
-android.target_api = 33
-android.ndk = 25b
-android.ndk_api = 21
+android.ndk = 19c  # Старая стабильная версия!
+android.sdk = 28   # Стабильный API
 android.arch = armeabi-v7a
-android.accept_sdk_license = True
 
 [buildozer]
 log_level = 2
-warn_on_root = 0
